@@ -1,0 +1,146 @@
+---
+title: "Linear Regression with Little Bag of Bootstraps"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{blblm}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, warning = FALSE, message = FALSE}
+library(blblm)
+library(tidyverse)   # for analysis 
+library(knitr)       # for pretty tables
+
+data(iris)
+set.seed(1020)
+```
+
+# Using this Library: `blblm`
+
+This library takes features similar to `lm(formula, data, ...)` with the added feature of including `m` subsamples and `B` bootstraps.
+
+`blblm(formula, data, m = 10, B = 5000)`
+
+```{r}
+# Create a model with m subsets, each bootstrapped B times. 
+fit <- blblm(Sepal.Length ~ Petal.Width + Petal.Length, data = iris, m = 10, B = 15)
+
+# Works with interactions as well 
+blblm(Sepal.Length ~ Petal.Width + Petal.Length + Petal.Width * Petal.Length, 
+        data = iris, m = 10, B = 15)
+
+```
+
+
+## Print
+
+Returning the formula can be completed with `print()`. 
+
+`print(x, ...)`
+
+```{r}
+# Print the formula model
+print(fit)
+
+```
+
+The standard deviation can be called with `sigma()`. Default values to return the confidence interval are false. When requested, the confidence interval can be toggled with `confidence = TRUE` with default `level = 0.95`, unless otherwise specified. 
+
+## Sigma 
+
+`sigma(object, confidence = FALSE, level = 0.95, ...)`
+
+```{r}
+# Return sigma without CI
+sigma(fit)
+
+# return sigma with CI
+sigma(fit, confidence =TRUE)
+
+# return sigma with 90% CI
+sigma(fit, confidence =TRUE, level = .90)
+
+```
+
+
+## Coefficients 
+
+The coefficients of the set can be called with `coef()`
+
+`coef(object, ...)`
+
+```{r}
+coef(fit)
+
+```
+
+Confidence intervals for the coefficients are calculated with `confint()`. By default, the function will return a 95% confidence interval unless otherwise specified. The argument `parm` specifies which parameters should return coefficient confidence intervals.  
+
+`confint(object, parm = NULL, level = 0.95, ...)`
+
+```{r}
+
+# Coefficient Confidence Interal, default alpha = 0.05
+confint(fit)
+
+# Coefficient Confidence Interal, alpha = 0.10
+confint(fit, level = 0.90)
+
+# Return only first and second coef CI's
+confint(fit, parm = 1) # Just the Petal.Width
+```
+
+
+## Predictions
+
+Predictions work through the command `predict()`. The new data, `newdata`, can be a single value or matrix of values. A confidence interval option can be toggled with `confidence = TRUE` with default `level=0.95`. 
+
+`predict(object, newdata, confidence = FALSE, level = 0.95, ...)`
+
+```{r}
+
+# Single Value prediction
+predict(fit, iris[4,])
+
+# Take a random sampling  of ten points from the iris data
+X <- iris[sample(seq_len(150), 10),]
+head(X)
+
+# Fit the values to our model
+predict(fit, X)
+plot(predict(fit,X), X[,1]) # Plotted values
+
+# Fit them with a confidence interval 
+predict(fit, X, confidence = TRUE)
+
+```
+
+
+
+## Added Features
+
+### GLM Modeling
+Similar to base R linear models, `blblm` has a `glm` extension. The glm functions are can be found under `vignette("blbglm")`. 
+
+
+### Helper Functions
+
+`est_df(object, value)`
+
+The primary function methods `sigma(fit)` and `coef(fit)` call on helper `est_df` to create a dataframe of their respective values. The function minimizes code duplication and improves call times, particularly for functions calling for the estimate value's mean and confidence interval collectively.  
+
+Example: `sigma_df <- est_df(fit, "sigma")`
+
+
+## Sources 
+
+sta141c-notes/ch08-bootstrap/blb.html
+sta141c-notes/ch08-bootstrap/bootstrap.html

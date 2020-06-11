@@ -1,0 +1,100 @@
+---
+title: "blblm Background and Motivation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{blblm_Background_and_Motivation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup, warning = FALSE, message = FALSE}
+library(blblm)
+library(tidyverse)   # for analysis 
+library(knitr)       # for pretty tables
+
+data(iris)
+```
+
+## Background 
+
+The bag of little bootstraps (BLB) is a procedure that takes the best of subsampling and bootstrapping to yield a robust and efficient analytical tool. BLB's primary use is for assessing the quality of estimators.^[sta141c-notes/ch08-bootstrap/blb.html]
+
+### Subsampling
+
+Subsampling works by taking random samples from the dataset on which to perform analysis.
+
+To take a sample from a dataframe, using the iris data, the function `sample()` is performed on the rows of `iris`:
+
+```{r sampling}
+set.seed(1020)
+
+m = 10             # Break data up into m subsample
+n = nrow(iris)/m   #   with each s containing n samples 
+
+a_sample = iris[sample(nrow(iris), n, replace = TRUE),] 
+kable(
+  head(a_sample)
+)                               # Preview of one subsample
+
+kable(
+  nrow(a_sample),               #  with n samples
+  col.names = "Subsample Size") 
+```
+
+### Bootstrapping
+
+Bootstrapping is a tool used to increase the number of iterations or instances of a dataset. By resampling, with replacement, our original data, we can create a data set that is highly similar to our data. The additional iterations help to improve error estimates.^[sta141c-notes/ch08-bootstrap/bootstrap.html] 
+
+In the sample below, we can compare the traditional means of collecting a confidence interval about the correlation between iris petal length and width using `cor.test()`:
+
+```{r oldci}
+
+# Find the dataset correlation bet petal features
+cor <- round(with(iris, cor(Petal.Width, Petal.Length)),4)
+
+# Return the confidence interval bounds for our single sample of irises
+ci <-  with(iris, cor.test(Petal.Width, Petal.Length)$conf.int) 
+
+```
+
+The result for the confidence interval for correlation `r paste0("(", round(ci[1],4), ", ", round(ci[2],4),")")` about correlation value `r cor`.
+
+Bootstrapping mimics how any original dataset would act. By taking the mean of `B` datasets, which originate from sampling with replacement of our original data, we can improve the precision and reduce the error that our original sample may be unintentionally bringing to the analysis. 
+
+```{r bootstrapci, cache = TRUE}
+library(rsample) # for bootstrapping 
+
+# Create 10,000 resamples of the iris data
+boots <- bootstraps(iris, times = 10)
+
+# Calculate the error for bootstrapped CI
+se <- boots %>%        # From our list of 10,000 samples
+  pull(splits) %>%     #  With each sampling
+  map_dbl(
+    ~ {
+      train_data <- analysis(.)
+      with(train_data, cor(Petal.Width, Petal.Length))   # Collect the correlation
+    }
+  ) %>%
+  sd()                                                   #  and report the error 
+
+# Calculate the upper and lower bounds
+cib <- with(iris, cor(Petal.Width, Petal.Length)) + 1.96 * c(-1, 1) * se
+```
+
+Bootstrapping narrowed the confidence band, giving us the slightly narrower interval `r paste0("(", round(cib[1],4), ", ", round(cib[2],4),")")` about the correlation of petal features, `r cor`. 
+
+## Motivation 
+
+While both subsampling and bootstrapping both powerful tools, combining the two can increase accuracy through the creation of similar-yet-original datasets. 
+
+This package is designed for intuitive usage, particularly for users familiar with generalized linear modelling tools in R. 
+
+

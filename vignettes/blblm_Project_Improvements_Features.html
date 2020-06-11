@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>blblm Project Improvements and Features</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">blblm Project Improvements and Features</h1>
+
+
+
+<div id="expectations" class="section level2">
+<h2>Expectations</h2>
+<p>First and foremost, I want this package to look and feel like a base R modeling tool. I’ve modelled my functions and outputs to mimic those of <code>lm()</code>. The primary reasoning behind this is to prevent slowing down a user who is already familiar with linear modelling in R. The parameters for functions are the same or similar to those in <code>lm()</code> and <code>glm()</code>. Similarly, outputs are formatted the same way.</p>
+<p>The last thing I want to do is have a user call <code>sigma(fit)</code> and not be able to use the output because I’ve pasted a descriptive tag to the front of it. Similarly with calling for a confidence interval. The user expects the features to be rowwise and the quantiles in columns. Simple actions like transposing the original output to one that looks like <code>confint.lm</code> may feel like an arbitrary step, but it may make a huge difference to the end user.</p>
+</div>
+<div id="workflow" class="section level2">
+<h2>Workflow</h2>
+<p>I’ll use this vignette to discuss my process of improving the <code>blblm</code> package.</p>
+<div id="metadata-and-licensing" class="section level3">
+<h3>Metadata and Licensing</h3>
+<p>A package is worthless if the user is unable to utilize it and all of it’s features. With that said, the function metadata was sparing at best to start.</p>
+<p>The package metadata itself has been greatly improved. By calling <code>?blblm</code>, a new help page comes up with information on the package as a whole as well as its namesake function. A detailed description has been added to clear up ambiguity about the function’s purpose, usage and argument sections make it simple for the user to put together their own call. Authorship was updated. The necessary package imports were updated as necessary.</p>
+<p>A pair of examples with different formulas and call overwrites for the number of bootstraps and subsections wrap up the documentation</p>
+<p>Each function, both internal and external, now had adequate documentation with at least a proper title, summary, argument list. See <code>?sigma.blblm</code>, for example. Several functions also have examples for ease of use.</p>
+<p>While not entirely necessary, I extended the function descriptions to the internal functions to aid in code maintenance when the time comes.</p>
+<p>This project is now licensed under the MIT license</p>
+</div>
+<div id="function-building" class="section level3">
+<h3>Function Building</h3>
+<p>It’s important to me that anyone can understand the source code. With that said, formatting nested lists into a format that is more appropriate tool some work. The use of pipes, <code>%&gt;%</code>, improved readability.</p>
+<div id="helper-functions" class="section level4">
+<h4>Helper Functions</h4>
+<p>The <code>blblm</code> family is made up of several helper functions:<code>split_data</code>, <code>lm_each_subsample</code>, etc. For helpers <code>blbsigma</code> and <code>blbcoef</code>, the respective <code>lm()</code> features were pulled from the model summary for accuracy.</p>
+</div>
+<div id="estimates" class="section level4">
+<h4>Estimates</h4>
+<p>Each <code>blblm</code> is made up of <code>m</code> subsamples each with <code>B</code> bootstraps, giving us <code>mB</code> calculated sigmas and coefficient sets. The estimates, formula coefficients and sigmas, are stored in nested lists, which aren’t particularly well designed for analysis.</p>
+<p>For example, finding <code>sigma</code> with internal function <code>blbsigma()</code> for each boot is straightforward, it’s the fit object’s single <code>sigma</code>, but scaling this up to find the overall <code>sigma</code>, the mean of all sigmas requires more work.</p>
+<p>Helper functions help simplify key functions and improve readability. One in particular, <code>est_df()</code> was utilited to convert the estimate features from nested lists, coefficients, <code>coefs</code> and <code>sigmas</code>, into a dataframe structure. From here, <code>mean()</code> and <code>colMeans()</code> were easy to apply.</p>
+</div>
+<div id="confidence-intervals" class="section level4">
+<h4>Confidence Intervals</h4>
+<p>The overall goal is to create a product that looks and performs similarly to <code>lm()</code>. Extra care went into the confidence intervals for <code>sigma</code>, <code>coef</code>, and <code>predict</code> to makes sure that the output is similar to that of <code>lm()</code>. While it’s a small detail, I feel that it gives the overall product a more professional feel and allows the user to extend tools used on base R modeling tools to the <code>blblm</code> package.</p>
+</div>
+</div>
+<div id="added-feature-blbglm" class="section level3">
+<h3>Added feature: <code>blbglm</code></h3>
+<p>In addition to the core functions, I’ve added a <code>blbglm</code> class that acts very much the same way as <code>glm</code>. Again, usage was made to be intuitive and the user should have no issue switching from other linear models to <code>glm</code>. Helper functions <code>sigma</code>,<code>coef</code>,<code>confint</code>, and <code>print</code> are all available to <code>blbglm</code> as well.</p>
+<p>While similar to <code>blblm</code>, the <code>glm</code> variant needed some additional work to make it more functional. For one, I’ve added a <code>family</code> parameter that allows the user to use any of the <code>glm</code> family functions. In the <code>blbglm</code> vignette, two examples with two families, <code>gaussian</code> and <code>binomial</code> show off this feature.</p>
+</div>
+</div>
+<div id="error-testing-and-sample-size-discussion-in-blbglm" class="section level2">
+<h2>Error Testing and Sample Size Discussion in <code>blbglm</code></h2>
+<p>I’ve had to increase the error handling as well. In <code>glm1()</code> is a error wrapper that takes the fit function and checks to see if the values have converged. If they have not, the values are thrown out, another multinomial sampling replaces the initial weight, and the function is re-run. There is error message suppression in this function, that is to quiet the initial <code>glm()</code> calls that may or may not have converged. Once the function has converged, the values are added to the list of estimates, and the next boot runs through the same process.</p>
+<p>Part of the issue seems to stem from the size of the multinomial distribution used to distribute weights. Smaller datasets suffer from less diversity in the multinomial distribution. This is a major issue when subsampling data; as the number of subsamples increases, the sample size decreases. Below, on the left, is an example of subsampling the iris data into 10 subsets, on the right, only two subsets. With the iris data already being a small data set, 150 rows, it doesn’t help to cut it down further.</p>
+<p>Bootstrapping will only compound these issues. Where we had one out of ten subsamples, that risk increases as the number of boots increases.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">set.seed</span>(<span class="dv">2240</span>)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">par</span>(<span class="dt">mfrow=</span><span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>))</span>
+<span id="cb1-3"><a href="#cb1-3"></a></span>
+<span id="cb1-4"><a href="#cb1-4"></a><span class="co"># Break up iris data into 10 subsets, assign mults</span></span>
+<span id="cb1-5"><a href="#cb1-5"></a>freqs &lt;-<span class="st"> </span><span class="kw">rmultinom</span>(<span class="dv">1</span>, <span class="kw">nrow</span>(iris)<span class="op">/</span><span class="dv">10</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">nrow</span>(iris)))</span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">plot</span>(freqs)</span>
+<span id="cb1-7"><a href="#cb1-7"></a></span>
+<span id="cb1-8"><a href="#cb1-8"></a></span>
+<span id="cb1-9"><a href="#cb1-9"></a>freqs2 &lt;-<span class="st"> </span><span class="kw">rmultinom</span>(<span class="dv">1</span>, <span class="kw">nrow</span>(iris)<span class="op">/</span><span class="dv">2</span>, <span class="kw">rep</span>(<span class="dv">1</span>, <span class="kw">nrow</span>(iris)))</span>
+<span id="cb1-10"><a href="#cb1-10"></a><span class="kw">plot</span>(freqs2)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div id="package-testing" class="section level3">
+<h3>Package Testing</h3>
+<p>I kept testing pretty simple, with S3 test for both <code>blblm</code> and <code>blbglm</code> checking that they match their respectively named classes.</p>
+<p>For a handful of the primary features, I’ve implementing testing to make sure that responses return as expected. Testing could be expanded, the test shown will show knowledge of the different tests available during package building.</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+---
+title: "blblm Project Improvements and Features"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{blblm_Project_Improvements_Features}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+## Expectations
+
+First and foremost, I want this package to look and feel like a base R modeling tool. I've modelled my functions and outputs to mimic those of `lm()`. The primary reasoning behind this is to prevent slowing down a user who is already familiar with linear modelling in R. The parameters for functions are the same or similar to those in `lm()` and `glm()`. Similarly, outputs are formatted the same way. 
+
+The last thing I want to do is have a user call `sigma(fit)` and not be able to use the output because I've pasted a descriptive tag to the front of it. Similarly with calling for a confidence interval. The user expects the features to be rowwise and the quantiles in columns. Simple actions like transposing the original output to one that looks like `confint.lm` may feel like an arbitrary step, but it may make a huge difference to the end user. 
+
+
+
+## Workflow 
+I'll use this vignette to discuss my process of improving the `blblm` package. 
+
+
+### Metadata and Licensing
+
+A package is worthless if the user is unable to utilize it and all of it's features. With that said, the function metadata was sparing at best to start. 
+
+The package metadata itself has been greatly improved. By calling `?blblm`, a new help page comes up with information on the package as a whole as well as its namesake function. A detailed description has been added to clear up ambiguity about the function's purpose, usage and argument sections make it simple for the user to put together their own call. Authorship was updated. The necessary package imports were updated as necessary.
+
+A pair of examples with different formulas and call overwrites for the number of bootstraps and subsections wrap up the documentation
+
+Each function, both internal and external, now had adequate documentation with at least a proper title, summary, argument list. See `?sigma.blblm`, for example.  Several functions also have examples for ease of use. 
+
+While not entirely necessary, I extended the function descriptions to the internal functions to aid in code maintenance when the time comes. 
+
+This project is now licensed under the MIT license 
+
+### Function Building 
+
+It's important to me that anyone can understand the source code. With that said, formatting nested lists into a format that is more appropriate tool some work. The use of pipes, `%>%`, improved readability. 
+
+#### Helper Functions 
+
+The `blblm` family is made up of several helper functions:`split_data`, `lm_each_subsample`, etc. For helpers `blbsigma` and `blbcoef`, the respective `lm()` features were pulled from the model summary for accuracy. 
+
+
+#### Estimates 
+
+Each `blblm` is made up of `m` subsamples each with `B` bootstraps, giving us `mB` calculated sigmas and coefficient sets. The estimates, formula coefficients and sigmas, are stored in nested lists, which aren't particularly well designed for analysis. 
+
+For example, finding `sigma` with internal function `blbsigma()` for each boot is straightforward, it's the fit object's single `sigma`, but scaling this up to find the overall `sigma`, the mean of all sigmas requires more work. 
+
+Helper functions help simplify key functions and improve readability. One in particular, `est_df()` was utilited to convert the estimate features from nested lists, coefficients, `coefs` and `sigmas`, into a dataframe structure. From here, `mean()` and `colMeans()` were easy to apply. 
+
+#### Confidence Intervals 
+
+The overall goal is to create a product that looks and performs similarly to `lm()`. Extra care went into the confidence intervals for `sigma`, `coef`, and `predict` to makes sure that the output is similar to that of `lm()`. While it's a small detail, I feel that it gives the overall product a more professional feel and allows the user to extend tools used on base R modeling tools to the `blblm` package. 
+
+### Added feature: `blbglm`
+
+In addition to the core functions, I've added a `blbglm` class that acts very much the same way as `glm`. Again, usage was made to be intuitive and the user should have no issue switching from other linear models to `glm`. Helper functions `sigma`,`coef`,`confint`, and `print` are all available to `blbglm` as well. 
+
+While similar to `blblm`, the `glm` variant needed some additional work to make it more functional. For one, I've added a `family` parameter that allows the user to use any of the `glm` family functions. In the `blbglm` vignette, two examples with two families, `gaussian` and `binomial` show off this feature. 
+
+
+## Error Testing and Sample Size Discussion in `blbglm` 
+
+I've had to increase the error handling as well. In `glm1()` is a error wrapper that takes the fit function and checks to see if the values have converged. If they have not, the values are thrown out, another multinomial sampling replaces the initial weight, and the function is re-run. There is error message suppression in this function, that is to quiet the initial `glm()` calls that may or may not have converged. Once the function has converged, the values are added to the list of estimates, and the next boot runs through the same process. 
+
+Part of the issue seems to stem from the size of the multinomial distribution used to distribute weights. Smaller datasets suffer from less diversity in the multinomial distribution. This is a major issue when subsampling data; as the number of subsamples increases, the sample size decreases. Below, on the left, is an example of subsampling the iris data into 10 subsets, on the right, only two subsets. With the iris data already being a small data set, 150 rows, it doesn't help to cut it down further.
+
+Bootstrapping will only compound these issues. Where we had one out of ten subsamples, that risk increases as the number of boots increases. 
+
+```{r}
+set.seed(2240)
+par(mfrow=c(1,2))
+
+# Break up iris data into 10 subsets, assign mults
+freqs <- rmultinom(1, nrow(iris)/10, rep(1, nrow(iris)))
+plot(freqs)
+
+
+freqs2 <- rmultinom(1, nrow(iris)/2, rep(1, nrow(iris)))
+plot(freqs2)
+
+```
+
+
+### Package Testing 
+
+I kept testing pretty simple, with S3 test for both `blblm` and `blbglm` checking that they match their respectively named classes. 
+
+For a handful of the primary features, I've implementing testing to make sure that responses return as expected. Testing could be expanded, the test shown will show knowledge of the different tests available during package building. 
+
+
+
+

@@ -1,62 +1,29 @@
 
-#' Linear Modeling with Little Bag of Bootstraps
-#' @name blblm
-#'
-#' @import purrr
-#' @import stats
-#' @importFrom magrittr %>%
-#' @importFrom utils "capture.output"
-#'
-#'
-"_PACKAGE"
-
-
-#' Bag of Little Bootstraps for Linear Models
+#' Bag of Little Bootstraps for Generalized Linear Models
 #'
 #' The  primary namesake function subsets the data into m sections,
 #' then bootstraps each subsample B times.
 #'
 #' @param formula the formula to be modelled
 #' @param data    the source data
+#' @param family  the model family
 #' @param m       the number of subsamples
 #' @param B       the number of bootstraps performed per subsample
 #'
 #' @export
 #'
-#' @examples
-#' fit <- blblm(Sepal.Length ~ Petal.Width + Petal.Length, data = iris, m = 10, B = 15)
 #'
-#' # An example with an interaction
-#' blblm(Sepal.Length ~ Petal.Width + Petal.Length + Petal.Width * Petal.Length,
-#'                           data = iris, m = 10, B = 15)
-#'
-blblm <- function(formula, data, m = 10, B = 5000) {
+blbglm <- function(formula, data, family = "gaussian", m = 10, B = 5000) {
   data_list <- split_data(data, m) # creates subsamples
   estimates <- map(                # creates a list of bootstraps list coefs, sigmas
     data_list,
-    ~ lm_each_subsample(formula = formula, data = ., n = nrow(data), B = B)
+    ~ glm_each_subsample(formula = formula, data = ., family, n = nrow(data), B = B)
   )
   res <- list(estimates = estimates, formula = formula) # the result is the estimate lists & formula
-  class(res) <- "blblm"                                 #
+  class(res) <- "blbglm"                                #
   invisible(res)                                        # return (invisible) results
 
-} # end blblm
-
-
-
-
-#' Split Data
-#'
-#' An internal function to split data into m parts of approximated equal sizes
-#'
-#' @param data  the source data
-#' @param m     the number of subsamples
-#'
-split_data <- function(data, m) {
-  idx <- sample.int(m, nrow(data), replace = TRUE)
-  data %>% split(idx)
-
-} # end split_data
+} # end blbglm
 
 
 #' Linear Regression Model of Each Subsample
@@ -66,15 +33,14 @@ split_data <- function(data, m) {
 #'
 #' @param formula the formula to be modelled
 #' @param data    the source data
+#' @param family  the model family
 #' @param n       the sample size
 #' @param B       the number of bootstraps performed
 #'
-lm_each_subsample <- function(formula, data, n, B) {
-  replicate(B, lm_each_boot(formula, data, n), simplify = FALSE)
+glm_each_subsample <- function(formula, data, family, n, B) {
+  replicate(B, glm_each_boot(formula, data, family, n), simplify = FALSE)
 
-} # end lm_each_subsample
-
-
+} # end glm_each_subsample
 
 
 #' Linear Regression Model of Each Bootstrap
@@ -84,15 +50,14 @@ lm_each_subsample <- function(formula, data, n, B) {
 #'
 #' @param formula the formula to be modelled
 #' @param data    the source data
+#' @param family  the model family
 #' @param n       the sample size
 #'
-lm_each_boot <- function(formula, data, n) {
+glm_each_boot <- function(formula, data, family, n) {
   freqs <- rmultinom(1, n, rep(1, nrow(data)))
-  lm1(formula, data, freqs)
+  glm1(formula, data, family, n, freqs)
 
-} # end lm_each_boot
-
-
+} # end glm_each_boot
 
 
 #' Linear Regression Model
@@ -102,56 +67,29 @@ lm_each_boot <- function(formula, data, n) {
 #'
 #' @param formula the formula to be modelled
 #' @param data    the source data
+#' @param family  the model family
+#' @param n       the sample size
 #' @param freqs   multinomial dist weights
 #'
-lm1 <- function(formula, data, freqs) {
+glm1 <- function(formula, data, family, n, freqs) {
   # drop the original closure of formula,
   # otherwise the formula will pick wrong variables from a parent scope.
   environment(formula) <- environment()
-  fit <- lm(formula, data, weights = freqs)
-  list(coef = blbcoef(fit), sigma = blbsigma(fit))
 
-} # end lm1
-
-
-
-#' Linear Regression Coefficients
-#'
-#' An internal function to pull linear regression
-#' coefficient estimates from the linear model
-#'
-#' @param fit  the fitted lm object
-#'
-blbcoef <- function(fit) {
-
-  # The coefficients are the intercept and regression slopes
-  fit$coefficients # pulled directly from lm model
-
-} # end blbcoef
+  fit <- suppressWarnings(
+          glm(formula, data, family= family, weights = freqs, maxit=100)
+         )
+  # Takes care of boots that aren't convergent (binomial)
+  while(!fit$converged){
+    freqs <- rmultinom(1, n, rep(1, nrow(data)))
+    fit <- glm(formula, data, family= family, weights = freqs, maxit=100)
+  }
+  list(coef = coef(fit), sigma = sigma(fit))
 
 
+   # from stats::glm
 
-
-#' Linear Regression Sigma
-#'
-#' An internal function to pull linear regression
-#' coefficient sigma from the linear model
-#'
-#' @param fit  the fitted lm object
-#'
-#'
-blbsigma <- function(fit) {
-  p <- fit$rank         # features + 1
-  y <- model.extract(fit$model, "response") # point residuals
-  e <- fitted(fit) - y                      # residuals
-  w <- fit$weights                          # weights
-
-  summary(fit)$sigma # pulled directly from lm model
-
-
-} # end blbsigma
-
-
+} # end glm1
 
 #' Print
 #'
@@ -161,14 +99,12 @@ blbsigma <- function(fit) {
 #' @param ... additional parameters related to print.lm
 #'
 #' @export
-#' @method print blblm
+#' @method print blbglm
 #'
-print.blblm <- function(x, ...) {
-  cat("blblm model:",capture.output(x$formula)) # pull from
+print.blbglm <- function(x, ...) {
+  cat("blbglm model:",capture.output(x$formula)) # pull from
 
 } # end print.blblm
-
-
 
 
 #' Sigma of Bag of Little Bootstraps
@@ -181,35 +117,33 @@ print.blblm <- function(x, ...) {
 #' @param ...        additional parameters related to sigma.lm
 #'
 #' @export
-#' @method sigma blblm
+#' @method sigma blbglm
 #'
 #' @example
 #' sigma(fit)
 #'
-sigma.blblm <- function(object, confidence = FALSE, level = 0.95, ...) {
+sigma.blbglm <- function(object, confidence = FALSE, level = 0.95, ...) {
 
   # Create a sigma dataframe, collection of subset-boot sigmas
-  sigma_df <- est_df(object,"sigma")
+  sigma_df <- blblm::est_df(object,"sigma")
 
   # Calculate sigma
   sigma <-  sigma_df %>% mean  #calculate mean of all sigmas collected
 
   # If confidence interval also requested
   if(confidence == TRUE){
-      # Return sigma ci
-      se <- sigma_df %>% sd()                                       # calculate std error for sigma
-      alpha <- 1 - level                                            # set alpha
+    # Return sigma ci
+    se <- sigma_df %>% sd()                                       # calculate std error for sigma
+    alpha <- 1 - level                                            # set alpha
 
-      sigma_ci <- with(object, sigma) + qnorm(1-alpha/2) * c(-1, 1) * se  # create confidence interval
-      data.frame("sigma"= sigma, "lwr"= sigma_ci[1], "upr"= sigma_ci[2])  # and return it as a dataframe
+    sigma_ci <- with(object, sigma) + qnorm(1-alpha/2) * c(-1, 1) * se  # create confidence interval
+    data.frame("sigma"= sigma, "lwr"= sigma_ci[1], "upr"= sigma_ci[2])  # and return it as a dataframe
 
-  # Otherwise just return sigma
+    # Otherwise just return sigma
   }else{
-      sigma
+    sigma
   }
 } # end sigma.blblm
-
-
 
 
 #' Coefficients of Bag of Little Bootstraps
@@ -220,18 +154,16 @@ sigma.blblm <- function(object, confidence = FALSE, level = 0.95, ...) {
 #' @param ...     additional parameters related to coef.lm
 #'
 #' @export
-#' @method coef blblm
+#' @method coef blbglm
 #'
 #'
-coef.blblm <- function(object, ...) {
+coef.blbglm <- function(object, ...) {
 
   #compute coef matrix, the mean of subset bootstrap coef means
   est_df(object,"coef") %>%  # Create a coefficient dataframe
     colMeans()               #  and return the coef means
 
 } # end coef.blblm
-
-
 
 
 #' Confidence Interval of Bag of Little Bootstraps
@@ -244,9 +176,9 @@ coef.blblm <- function(object, ...) {
 #' @param ...    additional parameters related to confint.lm
 #'
 #' @export
-#' @method confint blblm
+#' @method confint blbglm
 #'
-confint.blblm <- function(object, parm = NULL, level = 0.95, ...) {
+confint.blbglm <- function(object, parm = NULL, level = 0.95, ...) {
   alpha <- 1 - level
 
   # Create a confidence interval about each coefficient
@@ -256,16 +188,14 @@ confint.blblm <- function(object, parm = NULL, level = 0.95, ...) {
     parm +1                                                    # Return just requested
   }
 
-  ci <- est_df(object, "coef") %>%                             # Start with coef df
+  ci<- est_df(object, "coef") %>%                              # Start with coef df
       apply(MARGIN =  2,                                       #  and calculate the ci col wise
             function(x){
               mean(x) + qnorm(1-alpha/2)*c(-1, 1)*sd(x)}) %>%
-      as.data.frame(row.names = c("lwr", "upr")) %>% t          # store as a dataframe
-  ci[parm,]                                                     # return requested parameters
+      as.data.frame(row.names = c("lwr", "upr")) %>% t         # return as a dataframe
+  ci[parm,]                                                    # return requested parameters
 
 } # end confint.blblm
-
-
 
 
 #' Predicting with Bag of Little Bootstraps
@@ -280,9 +210,9 @@ confint.blblm <- function(object, parm = NULL, level = 0.95, ...) {
 #' @param ...        additional parameters related to predict.lm
 #'
 #' @export
-#' @method predict blblm
+#' @method predict blbglm
 #'
-predict.blblm <- function(object, newdata, confidence = FALSE, level = 0.95, ...) {
+predict.blbglm <- function(object, newdata, confidence = FALSE, level = 0.95, ...) {
 
   # Create a design matrix
   #  Refactor X using just the formula variables, set intercepts to 1
@@ -297,39 +227,18 @@ predict.blblm <- function(object, newdata, confidence = FALSE, level = 0.95, ...
     # YOUR CODE to compute the predictions and their confidence intervals
     se <- sigma(object)
     alpha <- 1-level
-    ci <- y_preds %>%                                   # Start with predicted values
-           apply(MARGIN =  2,                           #   and calculate the ci col wise
-           function(x){
+    ci <- y_preds %>%         # Start with predicted values
+      apply(MARGIN =  2,      #   and calculate the ci col wise
+            function(x){
               mean(x) + qnorm(1-alpha/2)*c(-1, 1)*se}) %>%
-           as.data.frame(row.names = c("lwr", "upr")) %>% t
+      as.data.frame(row.names = c("lwr", "upr")) %>% t
 
     # return fit values with ci bounds
     data.frame(cbind(t(y_preds), ci)) %>% set_names(.,c("fit", "lwr", "upr"))
 
   } else {
-     y_preds # Just return the y preds
+    y_preds # Just return the y preds
   }
-} # end predict.blblm
+} # end predict.blbglm
 
-
-#### HELPER FUNCTIONS ###
-
-
-#' Create Dataframe of Estimate Values
-#'
-#' An internal function to compute build a dataframe
-#' based on requested estimate value
-#'
-#' @param object the fitted object
-#' @param value the estimate value requested
-#'
-#' @export
-#'
-est_df<- function(object, value){
-  object$estimates %>% unlist(recursive = FALSE) %>%   # Breakdown formatting in est list
-    flatten %>% keep(names(.) == value) %>%             #  and keep the requested value
-    do.call(rbind,.)                                    #  to create a dataframe
-}
-
-### END USER CREATED HELPER FUNCTIONS
 

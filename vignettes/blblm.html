@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Linear Regression with Little Bag of Bootstraps</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Linear Regression with Little Bag of Bootstraps</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(blblm)</span>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(tidyverse)   <span class="co"># for analysis </span></span>
+<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">library</span>(knitr)       <span class="co"># for pretty tables</span></span>
+<span id="cb1-4"><a href="#cb1-4"></a></span>
+<span id="cb1-5"><a href="#cb1-5"></a><span class="kw">data</span>(iris)</span>
+<span id="cb1-6"><a href="#cb1-6"></a><span class="kw">set.seed</span>(<span class="dv">1020</span>)</span></code></pre></div>
+<div id="using-this-library-blblm" class="section level1">
+<h1>Using this Library: <code>blblm</code></h1>
+<p>This library takes features similar to <code>lm(formula, data, ...)</code> with the added feature of including <code>m</code> subsamples and <code>B</code> bootstraps.</p>
+<p><code>blblm(formula, data, m = 10, B = 5000)</code></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># Create a model with m subsets, each bootstrapped B times. </span></span>
+<span id="cb2-2"><a href="#cb2-2"></a>fit &lt;-<span class="st"> </span><span class="kw">blblm</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>Petal.Width <span class="op">+</span><span class="st"> </span>Petal.Length, <span class="dt">data =</span> iris, <span class="dt">m =</span> <span class="dv">10</span>, <span class="dt">B =</span> <span class="dv">15</span>)</span>
+<span id="cb2-3"><a href="#cb2-3"></a></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="co"># Works with interactions as well </span></span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">blblm</span>(Sepal.Length <span class="op">~</span><span class="st"> </span>Petal.Width <span class="op">+</span><span class="st"> </span>Petal.Length <span class="op">+</span><span class="st"> </span>Petal.Width <span class="op">*</span><span class="st"> </span>Petal.Length, </span>
+<span id="cb2-6"><a href="#cb2-6"></a>        <span class="dt">data =</span> iris, <span class="dt">m =</span> <span class="dv">10</span>, <span class="dt">B =</span> <span class="dv">15</span>)</span></code></pre></div>
+<div id="print" class="section level2">
+<h2>Print</h2>
+<p>Returning the formula can be completed with <code>print()</code>.</p>
+<p><code>print(x, ...)</code></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co"># Print the formula model</span></span>
+<span id="cb3-2"><a href="#cb3-2"></a><span class="kw">print</span>(fit)</span>
+<span id="cb3-3"><a href="#cb3-3"></a><span class="co">#&gt; blblm model: Sepal.Length ~ Petal.Width + Petal.Length</span></span></code></pre></div>
+<p>The standard deviation can be called with <code>sigma()</code>. Default values to return the confidence interval are false. When requested, the confidence interval can be toggled with <code>confidence = TRUE</code> with default <code>level = 0.95</code>, unless otherwise specified.</p>
+</div>
+<div id="sigma" class="section level2">
+<h2>Sigma</h2>
+<p><code>sigma(object, confidence = FALSE, level = 0.95, ...)</code></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># Return sigma without CI</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="kw">sigma</span>(fit)</span>
+<span id="cb4-3"><a href="#cb4-3"></a><span class="co">#&gt; [1] 1.35056</span></span>
+<span id="cb4-4"><a href="#cb4-4"></a></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="co"># return sigma with CI</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="kw">sigma</span>(fit, <span class="dt">confidence =</span><span class="ot">TRUE</span>)</span>
+<span id="cb4-7"><a href="#cb4-7"></a><span class="co">#&gt;     sigma       lwr      upr</span></span>
+<span id="cb4-8"><a href="#cb4-8"></a><span class="co">#&gt; 1 1.35056 0.7269986 1.974122</span></span>
+<span id="cb4-9"><a href="#cb4-9"></a></span>
+<span id="cb4-10"><a href="#cb4-10"></a><span class="co"># return sigma with 90% CI</span></span>
+<span id="cb4-11"><a href="#cb4-11"></a><span class="kw">sigma</span>(fit, <span class="dt">confidence =</span><span class="ot">TRUE</span>, <span class="dt">level =</span> <span class="fl">.90</span>)</span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="co">#&gt;     sigma       lwr      upr</span></span>
+<span id="cb4-13"><a href="#cb4-13"></a><span class="co">#&gt; 1 1.35056 0.8272507 1.873869</span></span></code></pre></div>
+</div>
+<div id="coefficients" class="section level2">
+<h2>Coefficients</h2>
+<p>The coefficients of the set can be called with <code>coef()</code></p>
+<p><code>coef(object, ...)</code></p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">coef</span>(fit)</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="co">#&gt;  (Intercept)  Petal.Width Petal.Length </span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="co">#&gt;    4.2258393   -0.2271371    0.5063443</span></span></code></pre></div>
+<p>Confidence intervals for the coefficients are calculated with <code>confint()</code>. By default, the function will return a 95% confidence interval unless otherwise specified. The argument <code>parm</code> specifies which parameters should return coefficient confidence intervals.</p>
+<p><code>confint(object, parm = NULL, level = 0.95, ...)</code></p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a></span>
+<span id="cb6-2"><a href="#cb6-2"></a><span class="co"># Coefficient Confidence Interal, default alpha = 0.05</span></span>
+<span id="cb6-3"><a href="#cb6-3"></a><span class="kw">confint</span>(fit)</span>
+<span id="cb6-4"><a href="#cb6-4"></a><span class="co">#&gt;                     lwr       upr</span></span>
+<span id="cb6-5"><a href="#cb6-5"></a><span class="co">#&gt; Petal.Width  -0.9379363 0.4836620</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a><span class="co">#&gt; Petal.Length  0.2151031 0.7975856</span></span>
+<span id="cb6-7"><a href="#cb6-7"></a></span>
+<span id="cb6-8"><a href="#cb6-8"></a><span class="co"># Coefficient Confidence Interal, alpha = 0.10</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a><span class="kw">confint</span>(fit, <span class="dt">level =</span> <span class="fl">0.90</span>)</span>
+<span id="cb6-10"><a href="#cb6-10"></a><span class="co">#&gt;                     lwr       upr</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a><span class="co">#&gt; Petal.Width  -0.8236586 0.3693843</span></span>
+<span id="cb6-12"><a href="#cb6-12"></a><span class="co">#&gt; Petal.Length  0.2619270 0.7507617</span></span>
+<span id="cb6-13"><a href="#cb6-13"></a></span>
+<span id="cb6-14"><a href="#cb6-14"></a><span class="co"># Return only first and second coef CI&#39;s</span></span>
+<span id="cb6-15"><a href="#cb6-15"></a><span class="kw">confint</span>(fit, <span class="dt">parm =</span> <span class="dv">1</span>) <span class="co"># Just the Petal.Width</span></span>
+<span id="cb6-16"><a href="#cb6-16"></a><span class="co">#&gt;      lwr      upr </span></span>
+<span id="cb6-17"><a href="#cb6-17"></a><span class="co">#&gt; 3.707770 4.743908</span></span></code></pre></div>
+</div>
+<div id="predictions" class="section level2">
+<h2>Predictions</h2>
+<p>Predictions work through the command <code>predict()</code>. The new data, <code>newdata</code>, can be a single value or matrix of values. A confidence interval option can be toggled with <code>confidence = TRUE</code> with default <code>level=0.95</code>.</p>
+<p><code>predict(object, newdata, confidence = FALSE, level = 0.95, ...)</code></p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a></span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="co"># Single Value prediction</span></span>
+<span id="cb7-3"><a href="#cb7-3"></a><span class="kw">predict</span>(fit, iris[<span class="dv">4</span>,])</span>
+<span id="cb7-4"><a href="#cb7-4"></a><span class="co">#&gt;             4</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a><span class="co">#&gt; [1,] 4.939928</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="co"># Take a random sampling  of ten points from the iris data</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a>X &lt;-<span class="st"> </span>iris[<span class="kw">sample</span>(<span class="kw">seq_len</span>(<span class="dv">150</span>), <span class="dv">10</span>),]</span>
+<span id="cb7-9"><a href="#cb7-9"></a><span class="kw">head</span>(X)</span>
+<span id="cb7-10"><a href="#cb7-10"></a><span class="co">#&gt;     Sepal.Length Sepal.Width Petal.Length Petal.Width    Species</span></span>
+<span id="cb7-11"><a href="#cb7-11"></a><span class="co">#&gt; 133          6.4         2.8          5.6         2.2  virginica</span></span>
+<span id="cb7-12"><a href="#cb7-12"></a><span class="co">#&gt; 43           4.4         3.2          1.3         0.2     setosa</span></span>
+<span id="cb7-13"><a href="#cb7-13"></a><span class="co">#&gt; 74           6.1         2.8          4.7         1.2 versicolor</span></span>
+<span id="cb7-14"><a href="#cb7-14"></a><span class="co">#&gt; 53           6.9         3.1          4.9         1.5 versicolor</span></span>
+<span id="cb7-15"><a href="#cb7-15"></a><span class="co">#&gt; 79           6.0         2.9          4.5         1.5 versicolor</span></span>
+<span id="cb7-16"><a href="#cb7-16"></a><span class="co">#&gt; 90           5.5         2.5          4.0         1.3 versicolor</span></span>
+<span id="cb7-17"><a href="#cb7-17"></a></span>
+<span id="cb7-18"><a href="#cb7-18"></a><span class="co"># Fit the values to our model</span></span>
+<span id="cb7-19"><a href="#cb7-19"></a><span class="kw">predict</span>(fit, X)</span>
+<span id="cb7-20"><a href="#cb7-20"></a><span class="co">#&gt;           133      43       74       53       79       90       99       65      123      148</span></span>
+<span id="cb7-21"><a href="#cb7-21"></a><span class="co">#&gt; [1,] 6.561666 4.83866 6.333093 6.366221 6.163683 5.955938 5.495022 5.753401 7.164072 6.404556</span></span>
+<span id="cb7-22"><a href="#cb7-22"></a><span class="kw">plot</span>(<span class="kw">predict</span>(fit,X), X[,<span class="dv">1</span>]) <span class="co"># Plotted values</span></span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a></span>
+<span id="cb8-2"><a href="#cb8-2"></a><span class="co"># Fit them with a confidence interval </span></span>
+<span id="cb8-3"><a href="#cb8-3"></a><span class="kw">predict</span>(fit, X, <span class="dt">confidence =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="co">#&gt;          fit      lwr      upr</span></span>
+<span id="cb8-5"><a href="#cb8-5"></a><span class="co">#&gt; 133 6.561666 3.914617 9.208715</span></span>
+<span id="cb8-6"><a href="#cb8-6"></a><span class="co">#&gt; 43  4.838660 2.191611 7.485709</span></span>
+<span id="cb8-7"><a href="#cb8-7"></a><span class="co">#&gt; 74  6.333093 3.686044 8.980142</span></span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="co">#&gt; 53  6.366221 3.719172 9.013270</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a><span class="co">#&gt; 79  6.163683 3.516634 8.810732</span></span>
+<span id="cb8-10"><a href="#cb8-10"></a><span class="co">#&gt; 90  5.955938 3.308889 8.602987</span></span>
+<span id="cb8-11"><a href="#cb8-11"></a><span class="co">#&gt; 99  5.495022 2.847972 8.142071</span></span>
+<span id="cb8-12"><a href="#cb8-12"></a><span class="co">#&gt; 65  5.753401 3.106352 8.400450</span></span>
+<span id="cb8-13"><a href="#cb8-13"></a><span class="co">#&gt; 123 7.164072 4.517023 9.811121</span></span>
+<span id="cb8-14"><a href="#cb8-14"></a><span class="co">#&gt; 148 6.404556 3.757507 9.051605</span></span></code></pre></div>
+</div>
+<div id="added-features" class="section level2">
+<h2>Added Features</h2>
+<div id="glm-modeling" class="section level3">
+<h3>GLM Modeling</h3>
+<p>Similar to base R linear models, <code>blblm</code> has a <code>glm</code> extension. The glm functions are can be found under <code>vignette(&quot;blbglm&quot;)</code>.</p>
+</div>
+<div id="helper-functions" class="section level3">
+<h3>Helper Functions</h3>
+<p><code>est_df(object, value)</code></p>
+<p>The primary function methods <code>sigma(fit)</code> and <code>coef(fit)</code> call on helper <code>est_df</code> to create a dataframe of their respective values. The function minimizes code duplication and improves call times, particularly for functions calling for the estimate value’s mean and confidence interval collectively.</p>
+<p>Example: <code>sigma_df &lt;- est_df(fit, &quot;sigma&quot;)</code></p>
+</div>
+</div>
+<div id="sources" class="section level2">
+<h2>Sources</h2>
+<p>sta141c-notes/ch08-bootstrap/blb.html sta141c-notes/ch08-bootstrap/bootstrap.html</p>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

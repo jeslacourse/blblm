@@ -2,10 +2,14 @@
 % Please edit documentation in R/blblm.R
 \name{blbsigma}
 \alias{blbsigma}
-\title{compute sigma from fit}
+\title{Linear Regression Sigma}
 \usage{
 blbsigma(fit)
 }
+\arguments{
+\item{fit}{the fitted lm object}
+}
 \description{
-compute sigma from fit
+An internal function to pull linear regression
+coefficient sigma from the linear model
 }

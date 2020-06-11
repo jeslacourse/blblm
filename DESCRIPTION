@@ -1,18 +1,26 @@
 Package: blblm
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Linear Modeling with Little Bag of Bootstraps
+Version: 1.0.0
+Author: Jessica LaCourse, Randy Lai
+Maintainer: The package maintainer <jllacourse@ucdavis.edu>
+Description: The bag of little bootstraps (BLB) is a procedure 
+    that takes the best of subsampling and bootstrapping to yield 
+    a robust and efficient analytical tool. 
+    BLB's primary use is for assessing the quality of estimators.
+Usage: 
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Suggests: 
-    testthat (>= 2.1.0)
+    testthat (>= 2.1.0),
+    knitr,
+    rmarkdown
 Imports: 
     purrr,
-    magrittr
+    magrittr,
+    tidyverse,
+    rsample
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
+VignetteBuilder: knitr
