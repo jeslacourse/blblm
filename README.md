@@ -8,28 +8,29 @@ While both subsampling and bootstrapping are powerful tools, combining the two c
 This package is designed for intuitive usage, particularly for users familiar with generalized linear modelling tools in R.
 
 
-## Vignettes 
+# Vignettes 
 
-Several Vignettes Available for more information: 
+Several Vignettes Available for detailed information: 
+
 `browseVignettes('blblm')`
 
-**blblm Background and Motivation**
-blblm_Background_and_Motivation
+### blblm Background and Motivation**
 
+`vignette("blblm_Background_and_Motivation")`
 Background understanding of bootstrapping and subsamplings. 
 
-**blblm Project Improvements and Features** 
+### blblm Project Improvements and Features
 
 `vignette("blblm_Project_Improvements_Features")`
-Walkthrough of my project building process and Discussion.
+Walkthrough of my project building process and discussion.
 
-**Linear Regression with Little Bag of Bootstraps**
+### Linear Regression with Little Bag of Bootstraps
 
 `vignette("blblm")` 
 Details of the `blblm` functions
 
 
-**Generalized Linear Modeling with Little Bag of Bootstraps**
+### Generalized Linear Modeling with Little Bag of Bootstraps
 
 `vignette("blbglm")` 
 Details of `blbglm` variant of `blblm`
