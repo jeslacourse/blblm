@@ -3,7 +3,7 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-While both subsampling and bootstrapping both powerful tools, combining the two can increase accuracy through the creation of similar-yet-original datasets.
+While both subsampling and bootstrapping are powerful tools, combining the two can increase accuracy through the creation of similar-yet-original datasets. `blblm` bootstraps linear models. 
 
 This package is designed for intuitive usage, particularly for users familiar with generalized linear modelling tools in R.
 
